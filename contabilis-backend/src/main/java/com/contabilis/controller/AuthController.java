@@ -22,7 +22,7 @@ public class AuthController {
     }
 
     // POST /api/auth/cadastro
-    @PostMapping("/cadastro")
+    @PostMapping("/cadastrar")
     public ResponseEntity<AuthResponse> cadastrar(@RequestBody CadastroRequest request) {
         return ResponseEntity.ok(authService.cadastrar(request));
     }
