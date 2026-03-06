@@ -4,6 +4,7 @@ import com.contabilis.security.JwtFilter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -36,15 +37,36 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Rotas públicas de autenticação
+
+                        // ── Autenticação (público) ──
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/servicos").permitAll()
-                        // Rotas do Swagger ← adicionadas aqui
+
+                        // ── Serviços (público — para o select do agendamento) ──
+                        .requestMatchers(HttpMethod.GET, "/api/servicos").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/servicos/**").permitAll()
+
+                        // ── Swagger (público) ──
                         .requestMatchers("/swagger-ui/**").permitAll()
                         .requestMatchers("/v3/api-docs/**").permitAll()
                         .requestMatchers("/swagger-ui.html").permitAll()
-                        // Rotas protegidas
+
+                        // ── Agendamentos ──
+                        .requestMatchers(HttpMethod.POST, "/api/agendamentos").authenticated()       // cliente cria
+                        .requestMatchers(HttpMethod.GET, "/api/agendamentos/meus").authenticated()   // cliente vê os seus
+                        .requestMatchers(HttpMethod.GET, "/api/agendamentos").hasRole("ADMIN")       // admin vê todos
+                        .requestMatchers(HttpMethod.GET, "/api/agendamentos/**").authenticated()     // busca por id
+                        .requestMatchers(HttpMethod.PUT, "/api/agendamentos/**").hasRole("ADMIN")    // admin atualiza status
+                        .requestMatchers(HttpMethod.DELETE, "/api/agendamentos/**").authenticated()  // cancela
+
+                        // ── Pagamentos ──
+                        .requestMatchers(HttpMethod.POST, "/api/pagamentos").authenticated()         // cliente paga
+                        .requestMatchers(HttpMethod.GET, "/api/pagamentos/meus").authenticated()     // cliente vê os seus
+                        .requestMatchers(HttpMethod.GET, "/api/pagamentos").hasRole("ADMIN")         // admin vê todos
+
+                        // ── Admin (rotas exclusivas) ──
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                        // ── Qualquer outra rota exige autenticação ──
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
@@ -73,7 +95,3 @@ public class SecurityConfig {
         return source;
     }
 }
-
-
-
-
